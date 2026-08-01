@@ -1,0 +1,1332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EMIOS - Enterprise Migration Intelligence Operating System</title>
+  
+  <!-- Fonts & Material Icons -->
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,400,500,700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" />
+  
+  <!-- Vis.js for stunning graph layout and physics simulation -->
+  <script type="text/javascript" src="https://unpkg.com/vis-network@9.1.9/dist/vis-network.min.js"></script>
+  
+  <!-- Tailwind for quick styling utility (used alongside MUI) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React 18, Babel, MUI, Recharts from UMD/CDN -->
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  
+  <!-- Material UI UMD Bundle -->
+  <script src="https://unpkg.com/@mui/material@5.14.20/umd/material-ui.production.min.js" crossorigin></script>
+  
+  <!-- Recharts CDN dependencies -->
+  <script src="https://unpkg.com/prop-types@15.8.1/prop-types.min.js"></script>
+  <script src="https://unpkg.com/recharts@2.10.3/umd/Recharts.js"></script>
+
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="index.css">
+
+  <script>
+    // Tailwind Config
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            brandBlue: '#00f2fe',
+            brandSlate: '#121829',
+            brandDark: '#0a0e1a',
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- React code with Babel compiler -->
+  <script type="text/babel">
+    const { 
+      ThemeProvider, createTheme, CssBaseline, Box, Grid, Paper, AppBar, Toolbar, 
+      Typography, Button, Tabs, Tab, CircularProgress, Divider, List, ListItem, 
+      ListItemText, Card, CardContent, ButtonGroup, Chip, Alert, Dialog, DialogTitle,
+      DialogContent, DialogActions, TextField, LinearProgress, Drawer, Fab
+    } = MaterialUI;
+
+
+    // Define Premium Light Theme
+    const lightTheme = createTheme({
+      palette: {
+        mode: 'light',
+        primary: {
+          main: '#0284c7', // Sky blue
+        },
+        secondary: {
+          main: '#4f46e5', // Indigo
+        },
+        background: {
+          default: '#f8fafc',
+          paper: 'rgba(255, 255, 255, 0.85)',
+        },
+        text: {
+          primary: '#0f172a',
+          secondary: '#475569',
+        }
+      },
+      typography: {
+        fontFamily: '"Outfit", "Roboto", "Helvetica", "Arial", sans-serif',
+      }
+    });
+
+    function App() {
+      // States
+      const [activeTab, setActiveTab] = React.useState(0);
+      const [nodes, setNodes] = React.useState([]);
+      const [edges, setEdges] = React.useState([]);
+      const [selectedNode, setSelectedNode] = React.useState(null);
+      const [loading, setLoading] = React.useState(false);
+      const [network, setNetwork] = React.useState(null);
+      
+      // Simulation States
+      const [simulationTarget, setSimulationTarget] = React.useState(null);
+      const [simulationResult, setSimulationResult] = React.useState(null);
+      const [alreadyMigrated, setAlreadyMigrated] = React.useState([]);
+      const [activeSimulationTab, setActiveSimulationTab] = React.useState(0);
+
+      // Multi-Agent Planner States
+      const [planResult, setPlanResult] = React.useState(null);
+      const [planningLoading, setPlanningLoading] = React.useState(false);
+      
+      // Custom Upload Dialog State
+      const [uploadDialogOpen, setUploadDialogOpen] = React.useState(false);
+      const [nodesCSV, setNodesCSV] = React.useState('');
+      const [edgesCSV, setEdgesCSV] = React.useState('');
+      const [health, setHealth] = React.useState({ status: 'loading', database: 'checking' });
+      const [uploadReport, setUploadReport] = React.useState(null);
+      const [reportDialogOpen, setReportDialogOpen] = React.useState(false);
+
+      // Copilot Chat & Observability States
+      const [chatOpen, setChatOpen] = React.useState(false);
+      const [chatMessages, setChatMessages] = React.useState([
+        { role: 'assistant', content: 'Hello! I am your EMIOS Migration Copilot. Ask me anything about your Digital Twin topology, risk simulation results, or multi-agent wave recommendations.' }
+      ]);
+      const [chatInput, setChatInput] = React.useState('');
+      const [chatLoading, setChatLoading] = React.useState(false);
+      const [obsStatus, setObsStatus] = React.useState(null);
+
+      // Fetch active graph, health, and observability on load
+      React.useEffect(() => {
+        loadGraph();
+        checkHealth();
+        fetchObservability();
+      }, []);
+
+      const fetchObservability = async () => {
+        try {
+          const res = await fetch('/api/observability/status');
+          const data = await res.json();
+          setObsStatus(data);
+        } catch (e) {
+          console.error("Observability fetch failed:", e);
+        }
+      };
+
+      const handleSendChat = async () => {
+        if (!chatInput.trim()) return;
+        const newMsg = { role: 'user', content: chatInput };
+        const updatedMsgs = [...chatMessages, newMsg];
+        setChatMessages(updatedMsgs);
+        setChatInput('');
+        setChatLoading(true);
+
+        try {
+          const res = await fetch('/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ messages: updatedMsgs })
+          });
+          const data = await res.json();
+          setChatMessages([...updatedMsgs, { role: 'assistant', content: data.reply }]);
+          fetchObservability();
+        } catch (e) {
+          setChatMessages([...updatedMsgs, { role: 'assistant', content: "Error calling Copilot: " + e.message }]);
+        } finally {
+          setChatLoading(false);
+        }
+      };
+
+      const checkHealth = async () => {
+        try {
+          const res = await fetch('/api/health');
+          const data = await res.json();
+          setHealth(data);
+        } catch (e) {
+          setHealth({ status: 'degraded', database: 'offline' });
+        }
+      };
+
+
+      const loadGraph = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch('/api/graph');
+          const data = await res.json();
+          setNodes(data.nodes || []);
+          setEdges(data.edges || []);
+          setSelectedNode(null);
+          setSimulationResult(null);
+          setSimulationTarget(null);
+        } catch (error) {
+          console.error("Error fetching graph data:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const loadDemo = async () => {
+        setLoading(true);
+        try {
+          const res = await fetch('/api/reset', { method: 'POST' });
+          const data = await res.json();
+          loadGraph();
+        } catch (error) {
+          console.error("Error loading demo:", error);
+          setLoading(false);
+        }
+      };
+
+      const handleDownloadTemplates = async () => {
+        try {
+          const res = await fetch('/api/templates/download');
+          if (!res.ok) throw new Error("Templates endpoint returned error");
+          const data = await res.json();
+          
+          // Nodes template file download
+          const nodesBlob = new Blob([data.nodes], { type: 'text/csv' });
+          const nodesUrl = window.URL.createObjectURL(nodesBlob);
+          const a1 = document.createElement('a');
+          a1.href = nodesUrl;
+          a1.download = 'nodes_template.csv';
+          a1.click();
+          window.URL.revokeObjectURL(nodesUrl);
+
+          // Edges template file download
+          if (data.edges) {
+            const edgesBlob = new Blob([data.edges], { type: 'text/csv' });
+            const edgesUrl = window.URL.createObjectURL(edgesBlob);
+            const a2 = document.createElement('a');
+            a2.href = edgesUrl;
+            a2.download = 'edges_template.csv';
+            a2.click();
+            window.URL.revokeObjectURL(edgesUrl);
+          }
+        } catch (error) {
+          alert("Failed to download templates: " + error.message);
+        }
+      };
+
+      const handleUploadCSV = async () => {
+        if (!nodesCSV) return;
+        setLoading(true);
+        try {
+          const formData = new FormData();
+          
+          // Detect if pasted data is JSON or CSV and name file extension accordingly
+          const isJson = nodesCSV.trim().startsWith("[");
+          const filename = isJson ? "metadata.json" : "metadata.csv";
+          
+          const nodesBlob = new Blob([nodesCSV], { type: isJson ? 'application/json' : 'text/csv' });
+          formData.append('nodes_file', nodesBlob, filename);
+          
+          if (edgesCSV && !isJson) {
+            const edgesBlob = new Blob([edgesCSV], { type: 'text/csv' });
+            formData.append('edges_file', edgesBlob, 'dependencies.csv');
+          }
+          
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData
+          });
+          
+          const data = await res.json();
+          if (!res.ok) {
+            throw new Error(data.message || "Invalid metadata file layout");
+          }
+          
+          setUploadReport(data);
+          setUploadDialogOpen(false);
+          setReportDialogOpen(true);
+        } catch (error) {
+          alert("Ingestion Error: " + error.message);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+
+      const triggerSimulation = async (nodeId) => {
+        setLoading(true);
+        setSimulationTarget(nodeId);
+        try {
+          const res = await fetch('/api/simulate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              target_id: nodeId,
+              already_migrated: alreadyMigrated
+            })
+          });
+          const data = await res.json();
+          setSimulationResult(data);
+          // Switch to Simulation tab for details
+          setActiveTab(1);
+        } catch (error) {
+          console.error("Simulation request failed:", error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const triggerPlanning = async () => {
+        setPlanningLoading(true);
+        setPlanResult(null);
+        try {
+          const res = await fetch('/api/plan', { method: 'POST' });
+          const data = await res.json();
+          setPlanResult(data);
+          // Switch to Planning tab
+          setActiveTab(2);
+        } catch (error) {
+          console.error("Planning failed:", error);
+        } finally {
+          setPlanningLoading(false);
+        }
+      };
+
+      // Vis.js Network rendering Logic
+      React.useEffect(() => {
+        const container = document.getElementById('network-graph');
+        if (!container || nodes.length === 0) return;
+
+        // Customise vis nodes based on active state / simulation results
+        const visNodes = nodes.map(n => {
+          let color = { background: '#1e293b', border: '#475569', highlight: { background: '#0f172a', border: '#00f2fe' } };
+          let fontColor = '#f8fafc';
+          let shadow = false;
+          let label = `<b>${n.name}</b>\nComplexity: ${n.migration_complexity}\nImpact: $${n.revenue_impact.toLocaleString()}/mo`;
+          
+          // Apply colors depending on node properties
+          if (simulationTarget === n.id) {
+            color = { background: '#ef4444', border: '#f43f5e', highlight: { background: '#ef4444', border: '#ffffff' } };
+            shadow = { enabled: true, color: '#f43f5e', size: 15 };
+            label += `\n[MIGRATION SOURCE]`;
+          } else {
+            // Find if this node is modified in the simulation results
+            const simNode = simulationResult?.impacted_services?.find(sn => sn.id === n.id);
+            const riskProb = simNode ? simNode.failure_probability : n.failure_probability;
+            
+            if (riskProb > 0) {
+              if (riskProb > 0.5) {
+                // Critical disruption (Red)
+                color = { background: '#ef4444', border: '#b91c1c', highlight: { background: '#dc2626', border: '#ef4444' } };
+                shadow = { enabled: true, color: '#ef4444', size: 8 };
+              } else {
+                // Moderate disruption (Yellow)
+                color = { background: '#eab308', border: '#a16207', highlight: { background: '#ca8a04', border: '#eab308' } };
+                shadow = { enabled: true, color: '#eab308', size: 8 };
+              }
+              label += `\nRisk Prob: ${Math.round(riskProb * 100)}%`;
+            } else {
+              // Color based on type
+              if (n.type === "Monolith") {
+                color = { background: '#ca8a04', border: '#854d0e', highlight: { background: '#a16207', border: '#eab308' } };
+              } else if (n.type === "Database") {
+                color = { background: '#2563eb', border: '#1d4ed8', highlight: { background: '#1d4ed8', border: '#3b82f6' } };
+              } else if (n.type === "Microservice") {
+                color = { background: '#0d9488', border: '#0f766e', highlight: { background: '#0f766e', border: '#14b8a6' } };
+              } else if (n.type === "Queue") {
+                color = { background: '#7c3aed', border: '#6d28d9', highlight: { background: '#6d28d9', border: '#8b5cf6' } };
+              }
+            }
+          }
+
+          return {
+            id: n.id,
+            label: label,
+            title: label.replace(/<[^>]*>/g, ''),
+            color: color,
+            shadow: shadow,
+            shape: 'box',
+            font: {
+              color: fontColor,
+              multi: 'html',
+              size: 14,
+              face: 'Outfit'
+            },
+            margin: 12,
+            borderWidth: 2,
+            shapeProperties: {
+              borderRadius: 6
+            }
+          };
+        });
+
+        // Vis edges
+        const visEdges = edges.map((e, idx) => {
+          let edgeColor = e.is_discovered ? '#0d9488' : '#cbd5e1';
+          let width = e.criticality === 'High' ? 3 : (e.criticality === 'Medium' ? 2 : 1);
+          let styleDashed = e.is_discovered;
+          let label = e.is_discovered ? 'discovered' : '';
+          
+          // Check if this connection matches a simulated cascading risk path
+          let isCriticalPath = false;
+          if (simulationResult?.critical_paths) {
+            for (const path of simulationResult.critical_paths) {
+              for (let i = 0; i < path.length - 1; i++) {
+                if (path[i] === e.target && path[i+1] === e.source) {
+                  isCriticalPath = true;
+                  break;
+                }
+              }
+            }
+          }
+
+          if (isCriticalPath) {
+            edgeColor = '#ef4444';
+            width = 4;
+            styleDashed = true;
+          }
+
+          return {
+            id: `edge-${idx}`,
+            from: e.source,
+            to: e.target,
+            color: { color: edgeColor, highlight: '#00f2fe' },
+            width: width,
+            arrows: { to: { enabled: true, scaleFactor: 0.8 } },
+            dashes: styleDashed,
+            font: { size: 10, fill: '#ffffff', color: '#475569', face: 'Roboto' },
+            label: label
+          };
+        });
+
+        const graphData = { nodes: visNodes, edges: visEdges };
+        const options = {
+          physics: {
+            stabilization: true,
+            barnesHut: {
+              gravitationalConstant: -2000,
+              springLength: 150,
+              springConstant: 0.04
+            }
+          },
+          interaction: {
+            hover: true,
+            tooltipDelay: 200
+          }
+        };
+
+        const activeNetwork = new vis.Network(container, graphData, options);
+        
+        // Save network instance
+        setNetwork(activeNetwork);
+
+        // Click interaction
+        activeNetwork.on("click", (params) => {
+          if (params.nodes.length > 0) {
+            const clickedId = params.nodes[0];
+            const foundNode = nodes.find(n => n.id === clickedId);
+            setSelectedNode(foundNode || null);
+          } else {
+            setSelectedNode(null);
+          }
+        });
+
+        return () => {
+          activeNetwork.destroy();
+        };
+
+      }, [nodes, edges, simulationTarget, simulationResult]);
+
+      // Handle custom files load dialog defaults
+      const openUploadDialogWithDemoCSV = () => {
+        setNodesCSV(
+          "System ID,System Name,Category,Priority,Monthly Revenue ($),Complexity,Migration Cost ($),Migration Time (Days),Tech Stack,Annual Hosting Cost ($)\n" +
+          "monolith,Legacy ERP & Catalog Monolith,Monolith,High,350000.0,High,500000.0,120,COBOL/Java 8,600000.0\n" +
+          "user_service,Identity & User Access,Microservice,High,180000.0,Medium,35000.0,21,Go 1.20,40000.0\n" +
+          "user_db,User Profiles Database,Database,High,200000.0,Medium,60000.0,30,PostgreSQL 14,80000.0\n" +
+          "order_service,Order Processing Engine,Microservice,High,300000.0,Medium,45000.0,25,Go 1.20,55000.0\n" +
+          "order_db,Orders Transaction Database,Database,High,300000.0,High,90000.0,45,PostgreSQL 14,120000.0\n" +
+          "inventory_manager,Inventory Control Service,Microservice,High,150000.0,Medium,30000.0,18,Java 17 (Spring),50000.0\n" +
+          "inventory_db,Warehouse Stock Oracle,Database,High,150000.0,High,120000.0,60,Oracle DB,180000.0"
+        );
+        setEdgesCSV(
+          "From System,To System,Connection Type,Importance\n" +
+          "monolith,user_service,Sync,High\n" +
+          "user_service,user_db,DB,High\n" +
+          "order_service,order_db,DB,High\n" +
+          "order_service,user_service,Sync,High\n" +
+          "order_service,inventory_manager,Sync,High\n" +
+          "inventory_manager,inventory_db,DB,High\n" +
+          "inventory_manager,order_service,Sync,High\n" +
+          "monolith,inventory_db,DB,High"
+        );
+        setUploadDialogOpen(true);
+      };
+
+      return (
+        <ThemeProvider theme={lightTheme}>
+          <CssBaseline />
+          
+          {/* Main Container */}
+          <Box className="flex flex-col min-h-screen relative">
+            <div className="hero-glow"></div>
+            
+            {/* AppBar Top */}
+            <AppBar position="static" className="glass-panel" sx={{ background: 'transparent', boxShadow: 'none' }}>
+              <Toolbar className="flex justify-between items-center">
+                <Box className="flex items-center gap-3">
+                  <span className="material-icons text-sky-600 text-3xl">hub</span>
+                  <Typography variant="h5" component="div" className="font-extrabold tracking-wider gradient-text">
+                    EMIOS
+                  </Typography>
+                  <Typography variant="subtitle2" className="hidden md:inline-block text-slate-600 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">
+                    Enterprise Migration Intelligence Operating System
+                  </Typography>
+                  {health.database === 'connected' && (
+                    <Chip 
+                      label="Neo4j Active" 
+                      size="small" 
+                      color="success" 
+                      variant="outlined" 
+                      className="text-[10px] font-bold h-5 border-emerald-500/20 text-emerald-600"
+                    />
+                  )}
+                  {health.database === 'unconnected' && (
+                    <Chip 
+                      label="In-Memory Fallback" 
+                      size="small" 
+                      color="info" 
+                      variant="outlined" 
+                      className="text-[10px] font-bold h-5 border-sky-500/20 text-sky-600"
+                    />
+                  )}
+                  {health.database === 'offline' && (
+                    <Chip 
+                      label="DB Offline" 
+                      size="small" 
+                      color="warning" 
+                      variant="outlined" 
+                      className="text-[10px] font-bold h-5 border-amber-500/20 text-amber-600"
+                    />
+                  )}
+                </Box>
+                
+                <Box className="flex items-center gap-3">
+                  <Button 
+                    variant="outlined" 
+                    color="secondary" 
+                    startIcon={<span className="material-icons">cloud_upload</span>}
+                    onClick={openUploadDialogWithDemoCSV}
+                    size="small"
+                  >
+                    Upload CSV
+                  </Button>
+                  <Button 
+                    variant="contained" 
+                    color="primary"
+                    startIcon={<span className="material-icons">refresh</span>}
+                    onClick={loadDemo}
+                    size="small"
+                  >
+                    Reset & Load Demo
+                  </Button>
+                </Box>
+              </Toolbar>
+            </AppBar>
+
+            {/* Sub-nav Tabs */}
+            <Box className="px-6 mt-4 flex items-center justify-between border-b border-slate-200">
+              <Tabs 
+                value={activeTab} 
+                onChange={(e, v) => setActiveTab(v)}
+                textColor="primary"
+                indicatorColor="primary"
+              >
+                <Tab label="Digital Twin Graph" className="font-semibold" />
+                <Tab label="What-If Simulation" className="font-semibold" disabled={!simulationResult} />
+                <Tab label="Agentic Wave Planner" className="font-semibold" />
+              </Tabs>
+              
+              {/* Agent Execution Trigger */}
+              <Box className="pb-2">
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  className="pulse-red"
+                  disabled={planningLoading}
+                  startIcon={planningLoading ? <CircularProgress size={16} /> : <span className="material-icons">psychology</span>}
+                  onClick={triggerPlanning}
+                >
+                  {planningLoading ? "Negotiating Waves..." : "Run Multi-Agent Planner"}
+                </Button>
+              </Box>
+            </Box>
+
+            {/* Content Layout */}
+            <Box className="flex-1 p-6">
+              {loading && <LinearProgress color="primary" className="mb-4 rounded" />}
+
+              {activeTab === 0 && (
+                <Grid container spacing={4}>
+                  {/* Left Column: Digital Twin Graph */}
+                  <Grid item xs={12} lg={8}>
+                    <Paper className="glass-panel p-4 flex flex-col gap-3">
+                      <Box className="flex justify-between items-center">
+                        <Box>
+                          <Typography variant="h6" className="font-bold flex items-center gap-2 text-sky-600">
+                            <span className="material-icons">settings_ethernet</span> Living Digital Twin
+                          </Typography>
+                          <Typography variant="caption" className="text-slate-600">
+                            Graph represents services (nodes) and dependencies (edges). Solid lines are declared dependencies; dotted teal represent agent-discovered links.
+                          </Typography>
+                        </Box>
+                        <Box className="flex gap-2">
+                          <Chip label="Monolith" size="small" style={{ backgroundColor: '#ca8a04', color: '#000' }} />
+                          <Chip label="Database" size="small" style={{ backgroundColor: '#2563eb' }} />
+                          <Chip label="Microservice" size="small" style={{ backgroundColor: '#0d9488' }} />
+                          <Chip label="Queue" size="small" style={{ backgroundColor: '#7c3aed' }} />
+                        </Box>
+                      </Box>
+
+                      {/* Vis.js element */}
+                      <div id="network-graph"></div>
+                    </Paper>
+                  </Grid>
+
+                  {/* Right Column: Node Inspector & Controls */}
+                  <Grid item xs={12} lg={4}>
+                    <Grid container spacing={3}>
+                      {/* Section 1: Instructions/Details */}
+                      <Grid item xs={12}>
+                        {selectedNode ? (
+                          <Paper className="glass-panel p-5 flex flex-col gap-4">
+                            <Box className="flex justify-between items-start">
+                              <Box>
+                                <Typography variant="h5" className="font-extrabold text-sky-600">
+                                  {selectedNode.name}
+                                </Typography>
+                                <Chip label={selectedNode.type} size="small" className="mt-1" color="secondary" />
+                              </Box>
+                              <Chip 
+                                label={selectedNode.status} 
+                                size="small" 
+                                color={selectedNode.status === 'Legacy' ? 'warning' : 'info'}
+                              />
+                            </Box>
+                            
+                            <Divider className="bg-white/10" />
+                            
+                            <Grid container spacing={2}>
+                              <Grid item xs={6}>
+                                <Typography variant="caption" className="text-slate-600 block">Revenue Impact</Typography>
+                                <Typography variant="h6" className="font-bold text-slate-900">
+                                  ${selectedNode.revenue_impact.toLocaleString()}/mo
+                                </Typography>
+                              </Grid>
+                              <Grid item xs={6}>
+                                <Typography variant="caption" className="text-slate-600 block">Business Value</Typography>
+                                <Typography variant="h6" className="font-bold text-slate-900">
+                                  {selectedNode.business_value}
+                                </Typography>
+                              </Grid>
+                              <Grid item xs={6}>
+                                <Typography variant="caption" className="text-slate-600 block">Migration Cost</Typography>
+                                <Typography variant="h6" className="font-bold text-slate-900">
+                                  ${selectedNode.base_cost.toLocaleString()}
+                                </Typography>
+                              </Grid>
+                              <Grid item xs={6}>
+                                <Typography variant="caption" className="text-slate-600 block">Complexity</Typography>
+                                <Typography variant="h6" className="font-bold text-slate-900">
+                                  {selectedNode.migration_complexity}
+                                </Typography>
+                              </Grid>
+                              {selectedNode.runtime && selectedNode.runtime !== 'Unknown' && (
+                                <Grid item xs={6}>
+                                  <Typography variant="caption" className="text-slate-600 block">Runtime</Typography>
+                                  <Typography variant="h6" className="font-bold text-teal-400 text-sm truncate">
+                                    {selectedNode.runtime}
+                                  </Typography>
+                                </Grid>
+                              )}
+                              {selectedNode.annual_cost > 0 && (
+                                <Grid item xs={6}>
+                                  <Typography variant="caption" className="text-slate-600 block">Annual Hosting Cost</Typography>
+                                  <Typography variant="h6" className="font-bold text-amber-500">
+                                    ${selectedNode.annual_cost.toLocaleString()}/yr
+                                  </Typography>
+                                </Grid>
+                              )}
+                            </Grid>
+
+                            <Divider className="bg-white/10" />
+
+                            <Box className="flex flex-col gap-2 mt-2">
+                              <Button 
+                                variant="contained" 
+                                color="error" 
+                                startIcon={<span className="material-icons">play_circle</span>}
+                                onClick={() => triggerSimulation(selectedNode.id)}
+                                fullWidth
+                              >
+                                Simulate Migration Risk
+                              </Button>
+                              <Typography variant="caption" className="text-slate-500 text-center">
+                                Simulates cascading failures upstream if this service is migrated out of order.
+                              </Typography>
+                            </Box>
+                          </Paper>
+                        ) : (
+                          <Paper className="glass-panel p-8 text-center flex flex-col items-center justify-center min-h-[300px] border-dashed border-2 border-slate-200">
+                            <span className="material-icons text-slate-500 text-5xl mb-3">touch_app</span>
+                            <Typography className="text-slate-700 font-bold mb-1">
+                              Service Node Inspector
+                            </Typography>
+                            <Typography variant="body2" className="text-slate-500 max-w-[250px]">
+                              Select any application node on the Digital Twin graph to view configuration metadata and trigger What-If analysis.
+                            </Typography>
+                          </Paper>
+                        )}
+                      </Grid>
+
+                      {/* Section 2: Quick Metrics */}
+                      <Grid item xs={12}>
+                        <Paper className="glass-panel p-5">
+                          <Typography variant="h6" className="font-bold mb-3 text-slate-700 flex items-center gap-2">
+                            <span className="material-icons">analytics</span> Ecosystem Summary
+                          </Typography>
+                          <div className="flex flex-col gap-3">
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-600">Total Systems:</span>
+                              <span className="font-bold text-slate-900">{nodes.length}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-600">Interdependencies:</span>
+                              <span className="font-bold text-slate-900">{edges.length}</span>
+                            </div>
+                            <div className="flex justify-between text-sm">
+                              <span className="text-slate-600">Undocumented Links Discovered:</span>
+                              <span className="font-bold text-teal-400">{edges.filter(e => e.is_discovered).length}</span>
+                            </div>
+                          </div>
+                        </Paper>
+                      </Grid>
+                    </Grid>
+                  </Grid>
+                </Grid>
+              )}
+
+              {activeTab === 1 && simulationResult && (
+                <Grid container spacing={4}>
+                  {/* Left Column: Cascading Risk & Recharts metrics */}
+                  <Grid item xs={12} lg={8}>
+                    <Paper className="glass-panel p-5 flex flex-col gap-5">
+                      <Box className="flex justify-between items-center border-b border-slate-200 pb-3">
+                        <Box>
+                          <Typography variant="h5" className="font-extrabold text-sky-600 flex items-center gap-2">
+                            <span className="material-icons">model_training</span> What-If Simulation
+                          </Typography>
+                          <Typography variant="caption" className="text-slate-600">
+                            Failure propagation path and Monte Carlo probabilistic projections.
+                          </Typography>
+                        </Box>
+                        
+                        <Tabs value={activeSimulationTab} onChange={(e, v) => setActiveSimulationTab(v)} size="small">
+                          <Tab label="Cascading Path" />
+                          <Tab label="Monte Carlo Forecast" />
+                        </Tabs>
+                      </Box>
+
+                      {activeSimulationTab === 0 && (
+                        <div className="flex flex-col gap-4">
+                          <Typography variant="subtitle1" className="font-bold text-slate-700">
+                            Impact Topology Graph
+                          </Typography>
+                          {/* Re-render Vis.js inline */}
+                          <div id="network-graph" style={{height: '350px'}}></div>
+                          
+                          <Typography variant="subtitle1" className="font-bold text-slate-700 mt-2">
+                            Critical Path Risk Propagation Trees
+                          </Typography>
+                          {simulationResult.critical_paths && simulationResult.critical_paths.length > 0 ? (
+                            <List className="bg-slate-100/40 rounded border border-slate-200 p-2">
+                              {simulationResult.critical_paths.map((path, idx) => (
+                                <ListItem key={idx} className="border-b border-slate-200 last:border-b-0 py-2">
+                                  <span className="material-icons text-error text-sm mr-2">arrow_forward</span>
+                                  <Typography variant="body2" className="font-mono text-slate-700">
+                                    {path.join(" ➔ ")}
+                                  </Typography>
+                                </ListItem>
+                              ))}
+                            </List>
+                          ) : (
+                            <Alert severity="success" className="bg-emerald-950/20 text-emerald-400 border border-emerald-500/20">
+                              No cascading dependency risks detected. This service has zero dependent client services.
+                            </Alert>
+                          )}
+                        </div>
+                      )}
+
+                      {activeSimulationTab === 1 && (
+                        <div className="flex flex-col gap-6">
+                          <Grid container spacing={3}>
+                            <Grid item xs={12} md={6}>
+                              <div className="p-4 bg-slate-50 rounded border border-slate-200">
+                                <Typography variant="caption" className="text-slate-600 block">Expected Migration Duration</Typography>
+                                <Typography variant="h4" className="font-extrabold text-sky-600">
+                                  {simulationResult.monte_carlo.expected_duration} days
+                                </Typography>
+                                <Typography variant="caption" className="text-slate-500">
+                                  90% Confidence Interval: {simulationResult.monte_carlo.confidence_90_duration[0]} - {simulationResult.monte_carlo.confidence_90_duration[1]} days
+                                </Typography>
+                              </div>
+                            </Grid>
+                            <Grid item xs={12} md={6}>
+                              <div className="p-4 bg-slate-50 rounded border border-slate-200">
+                                <Typography variant="caption" className="text-slate-600 block">Expected Migration Cost</Typography>
+                                <Typography variant="h4" className="font-extrabold text-teal-400">
+                                  ${simulationResult.monte_carlo.expected_cost.toLocaleString()}
+                                </Typography>
+                                <Typography variant="caption" className="text-slate-500">
+                                  90% Confidence Interval: ${simulationResult.monte_carlo.confidence_90_cost[0].toLocaleString()} - ${simulationResult.monte_carlo.confidence_90_cost[1].toLocaleString()}
+                                </Typography>
+                              </div>
+                            </Grid>
+                          </Grid>
+
+                          {/* Recharts chart */}
+                          <div className="w-full">
+                            <Typography variant="subtitle1" className="font-bold text-slate-700 mb-3">
+                              S-Curve Cumulative Probability Distribution
+                            </Typography>
+                            <div className="h-64 w-full bg-slate-100/70 p-2 rounded border border-slate-200">
+                              {/* Simple Recharts render via UMD */}
+                              {(() => {
+                                const { ResponsiveContainer, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend } = Recharts;
+                                return (
+                                  <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart data={simulationResult.monte_carlo.distribution}>
+                                      <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                      <XAxis dataKey="percentile" stroke="#94a3b8" label={{ value: 'Confidence Percentile (%)', position: 'insideBottom', offset: -5, fill: '#94a3b8' }} />
+                                      <YAxis yAxisId="left" stroke="#00f2fe" />
+                                      <YAxis yAxisId="right" orientation="right" stroke="#10b981" />
+                                      <Tooltip contentStyle={{ backgroundColor: '#0f172a', borderColor: 'rgba(255,255,255,0.1)' }} />
+                                      <Legend />
+                                      <Line yAxisId="left" type="monotone" dataKey="duration" name="Duration (Days)" stroke="#00f2fe" strokeWidth={2} dot={{ r: 3 }} />
+                                      <Line yAxisId="right" type="monotone" dataKey="cost" name="Cost (USD)" stroke="#10b981" strokeWidth={2} dot={{ r: 3 }} />
+                                    </LineChart>
+                                  </ResponsiveContainer>
+                                );
+                              })()}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </Paper>
+                  </Grid>
+
+                  {/* Right Column: Simulation Metrics Info Panel */}
+                  <Grid item xs={12} lg={4}>
+                    <Paper className="glass-panel p-5 flex flex-col gap-4">
+                      <Typography variant="h6" className="font-bold text-slate-700">
+                        Simulation Outcomes
+                      </Typography>
+                      <Divider className="bg-white/10" />
+                      
+                      <div className="flex flex-col gap-3">
+                        <div className="p-3 bg-red-950/15 border border-red-500/20 rounded">
+                          <Typography variant="caption" className="text-red-400 block font-bold">Revenue-At-Risk</Typography>
+                          <Typography variant="h5" className="font-extrabold text-red-500">
+                            ${simulationResult.revenue_at_risk.toLocaleString()} / mo
+                          </Typography>
+                        </div>
+                        
+                        <div className="p-3 bg-slate-50 rounded border border-slate-200">
+                          <Typography variant="caption" className="text-slate-600 block font-bold">Services Impacted (Upstream)</Typography>
+                          <Typography variant="h5" className="font-extrabold text-slate-900">
+                            {simulationResult.total_impacted_services} / {nodes.length - 1}
+                          </Typography>
+                        </div>
+
+                        {simulationResult.total_hosting_cost > 0 && (
+                          <React.Fragment>
+                            <div className="p-3 bg-slate-50 rounded border border-slate-200">
+                              <Typography variant="caption" className="text-slate-600 block font-bold">Total Annual Hosting Cost</Typography>
+                              <Typography variant="h5" className="font-extrabold text-amber-500">
+                                ${simulationResult.total_hosting_cost.toLocaleString()} / yr
+                              </Typography>
+                            </div>
+
+                            <div className="p-3 bg-emerald-950/15 border border-emerald-500/20 rounded">
+                              <Typography variant="caption" className="text-emerald-400 block font-bold">Potential Cloud Savings (Est. 30%)</Typography>
+                              <Typography variant="h5" className="font-extrabold text-emerald-400">
+                                ${simulationResult.potential_savings.toLocaleString()} / yr
+                              </Typography>
+                            </div>
+                          </React.Fragment>
+                        )}
+                      </div>
+                      
+                      <Typography variant="subtitle2" className="font-bold text-slate-700 mt-2">
+                        Upstream Impact List
+                      </Typography>
+                      
+                      <List className="max-h-60 overflow-y-auto bg-slate-100/70 rounded border border-slate-200 p-1">
+                        {simulationResult.impacted_services
+                          .filter(s => s.id !== simulationTarget && s.failure_probability > 0)
+                          .map(s => (
+                            <ListItem key={s.id} className="py-1 px-2 border-b border-slate-200 last:border-b-0 flex justify-between">
+                              <ListItemText 
+                                primary={s.name} 
+                                secondary={`Impact: $${s.revenue_impact.toLocaleString()}/mo`}
+                                primaryTypographyProps={{ style: { fontSize: '13px', fontWeight: 'bold' } }}
+                                secondaryTypographyProps={{ style: { fontSize: '11px' } }}
+                              />
+                              <Chip 
+                                label={`${Math.round(s.failure_probability * 100)}% risk`} 
+                                size="small" 
+                                color={s.failure_probability > 0.5 ? 'error' : 'warning'}
+                                className="h-6 text-[10px]"
+                              />
+                            </ListItem>
+                          ))}
+                      </List>
+                    </Paper>
+                  </Grid>
+                </Grid>
+              )}
+
+              {activeTab === 2 && (
+                <div className="flex flex-col gap-6">
+                  {obsStatus && (
+                    <Paper className="p-3 bg-slate-900 border border-slate-700 rounded text-slate-200 flex justify-between items-center text-xs">
+                      <div className="flex items-center gap-2">
+                        <span className="material-icons text-sky-400 text-sm">insights</span>
+                        <span className="font-bold">Langfuse Observability Tracing:</span>
+                        <Chip label={obsStatus.is_self_hosted ? "Self-Hosted (localhost:3000)" : "Cloud Active"} size="small" color="primary" className="h-5 text-[10px]" />
+                      </div>
+                      <div className="flex items-center gap-4 text-slate-400">
+                        <span>Traces: <strong className="text-white">{obsStatus.metrics?.total_traces || 0}</strong></span>
+                        <span>Generations: <strong className="text-white">{obsStatus.metrics?.total_generations || 0}</strong></span>
+                        <span>Est. Tokens: <strong className="text-white">{obsStatus.metrics?.total_tokens_estimated || 0}</strong></span>
+                        {planResult?.trace_id && (
+                          <Chip label={`Trace ID: ${planResult.trace_id}`} size="small" variant="outlined" className="h-5 text-[10px] text-sky-300 border-sky-500/40" />
+                        )}
+                      </div>
+                    </Paper>
+                  )}
+
+                  {planResult ? (
+                    <Grid container spacing={4}>
+
+                      {/* Left: Agent Dialogue Logs */}
+                      <Grid item xs={12} md={5}>
+                        <Paper className="glass-panel p-5 flex flex-col gap-4 h-[650px]">
+                          <Typography variant="h6" className="font-bold text-slate-700 flex items-center gap-2">
+                            <span className="material-icons">forum</span> Multi-Agent Dialogue Logs
+                          </Typography>
+                          <Divider className="bg-white/10" />
+                          
+                          {/* Dialogue stream */}
+                          <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-3">
+                            {planResult.negotiation_logs && planResult.negotiation_logs.map((log, idx) => (
+                              <div key={idx} className={`agent-card agent-${log.type}`}>
+                                <Box className="flex justify-between items-center mb-1">
+                                  <Typography variant="subtitle2" className="font-bold flex items-center gap-1 text-slate-700">
+                                    <span className="material-icons text-sm">
+                                      {log.type === 'discovery' ? 'search' : 
+                                       log.type === 'dependency' ? 'sync_alt' :
+                                       log.type === 'planner' ? 'calendar_today' : 'warning_amber'}
+                                    </span>
+                                    {log.agent}
+                                  </Typography>
+                                </Box>
+                                <Typography variant="body2" className="whitespace-pre-line text-slate-600 font-mono text-xs leading-relaxed">
+                                  {log.message}
+                                </Typography>
+                              </div>
+                            ))}
+                          </div>
+                        </Paper>
+                      </Grid>
+
+                      {/* Right: Wave Roadmap & Decoupling Recommendations */}
+                      <Grid item xs={12} md={7}>
+                        <Paper className="glass-panel p-5 flex flex-col gap-4 h-[650px] overflow-y-auto">
+                          <Typography variant="h6" className="font-bold text-sky-600 flex items-center gap-2">
+                            <span className="material-icons">map</span> Generated Migration Roadmap Waves
+                          </Typography>
+                          <Divider className="bg-white/10" />
+
+                          {/* Roadmap columns */}
+                          <div className="flex flex-col gap-6">
+                            {planResult.waves && planResult.waves.map((wave, idx) => (
+                              <div key={idx} className="p-4 bg-slate-50/40 rounded border border-slate-200 flex flex-col gap-3">
+                                <Box className="flex justify-between items-center">
+                                  <Typography variant="h6" className="font-bold text-sky-600">
+                                    Wave {idx + 1}
+                                  </Typography>
+                                  <Chip label={`${wave.length} Service(s)`} size="small" color="primary" variant="outlined" />
+                                </Box>
+                                
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                  {wave.map(nodeId => {
+                                    const s = nodes.find(n => n.id === nodeId) || { name: nodeId, type: 'Microservice', migration_complexity: 'Medium' };
+                                    const risk = planResult.risk_assessment[nodeId];
+                                    return (
+                                      <div key={nodeId} className="p-3 bg-slate-100 rounded border border-slate-200 flex flex-col justify-between">
+                                        <div>
+                                          <Typography variant="subtitle2" className="font-bold text-slate-900">
+                                            {s.name}
+                                          </Typography>
+                                          <Typography variant="caption" className="text-slate-600 block">
+                                            Type: {s.type} | Complexity: {s.migration_complexity}
+                                          </Typography>
+                                        </div>
+                                        {risk && (
+                                          <Box className="mt-2 flex justify-between items-center border-t border-slate-200 pt-2">
+                                            <span className="text-[10px] text-slate-600">Risk Score:</span>
+                                            <Chip 
+                                              label={`${Math.round(risk.score * 100)}%`} 
+                                              size="small"
+                                              color={risk.score > 0.15 ? "error" : "success"}
+                                              className="h-5 text-[10px]"
+                                            />
+                                          </Box>
+                                        )}
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+
+                          <Typography variant="h6" className="font-bold text-slate-700 mt-4 flex items-center gap-2">
+                            <span className="material-icons">construction</span> Decoupling & Modernization Actions
+                          </Typography>
+                          <Divider className="bg-white/10" />
+
+                          {planResult.decoupling_strategies && planResult.decoupling_strategies.length > 0 ? (
+                            <div className="flex flex-col gap-3">
+                              {planResult.decoupling_strategies.map((strat, idx) => (
+                                <div key={idx} className="p-3 bg-yellow-950/10 border border-yellow-500/10 rounded">
+                                  <Typography variant="subtitle2" className="text-yellow-500 font-bold flex items-center gap-1">
+                                    <span className="material-icons text-sm">warning</span> Loop Mitigated: {strat.description}
+                                  </Typography>
+                                  <Typography variant="body2" className="text-slate-600 mt-1 font-mono text-xs">
+                                    {strat.recommendation}
+                                  </Typography>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <Alert severity="success" className="bg-emerald-950/20 text-emerald-400 border border-emerald-500/20">
+                              No decoupling actions needed. The topology contains no cyclic reference bottlenecks.
+                            </Alert>
+                          )}
+                        </Paper>
+                      </Grid>
+                    </Grid>
+                  ) : (
+                    <Paper className="glass-panel p-16 text-center flex flex-col items-center justify-center border-dashed border-2 border-slate-200">
+                      <span className="material-icons text-slate-500 text-6xl mb-4">psychology</span>
+                      <Typography variant="h5" className="text-slate-700 font-bold mb-2">
+                        Ready for Multi-Agent Planning
+                      </Typography>
+                      <Typography variant="body2" className="text-slate-500 max-w-md mb-6">
+                        Triggers LangGraph multi-agent orchestration. Discovery, Dependency, Risk, and Planner agents will converse, negotiate scheduling trade-offs, solve dependency bottlenecks, and establish a finalized roadmap.
+                      </Typography>
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        startIcon={<span className="material-icons">rocket_launch</span>}
+                        disabled={planningLoading}
+                        onClick={triggerPlanning}
+                        size="large"
+                      >
+                        {planningLoading ? "Executing LangGraph Negotiators..." : "Orchestrate Agents Now"}
+                      </Button>
+                    </Paper>
+                  )}
+                </div>
+              )}
+            </Box>
+
+            {/* Custom Data Upload Dialog */}
+            <Dialog 
+              open={uploadDialogOpen} 
+              onClose={() => setUploadDialogOpen(false)}
+              maxWidth="md"
+              fullWidth
+              PaperProps={{ className: 'glass-panel p-3' }}
+            >
+              <DialogTitle className="font-extrabold text-sky-600 flex justify-between items-center">
+                <span>Upload Custom Legacy Metadata</span>
+                <Button 
+                  size="small"
+                  variant="outlined" 
+                  color="primary"
+                  startIcon={<span className="material-icons text-sm">download</span>}
+                  onClick={handleDownloadTemplates}
+                >
+                  Download Templates
+                </Button>
+              </DialogTitle>
+              <DialogContent className="flex flex-col gap-4">
+                <Typography variant="body2" className="text-slate-700 font-semibold">
+                  You can upload files using standard database keys or simple, human-friendly column names:
+                </Typography>
+                
+                <Box className="grid grid-cols-1 md:grid-cols-2 gap-4 bg-slate-100 p-3 rounded border border-slate-200 text-xs text-slate-600">
+                  <Box>
+                    <Typography className="text-sky-600 font-bold mb-1">Spreadsheet 1: Systems / Applications</Typography>
+                    <Typography><strong>Required Columns:</strong> <code>System ID</code> (or <code>id</code>), <code>System Name</code> (or <code>name</code>)</Typography>
+                    <Typography className="mt-1"><strong>Optional Columns:</strong> <code>Category</code> (Type), <code>Priority</code> (Value), <code>Monthly Revenue ($)</code>, <code>Complexity</code>, <code>Migration Cost ($)</code>, <code>Migration Time (Days)</code></Typography>
+                  </Box>
+                  <Box>
+                    <Typography className="text-teal-600 font-bold mb-1">Spreadsheet 2: Connections / Dependencies</Typography>
+                    <Typography><strong>Required Columns:</strong> <code>From System</code> (or <code>source</code>), <code>To System</code> (or <code>target</code>)</Typography>
+                    <Typography className="mt-1"><strong>Optional Columns:</strong> <code>Connection Type</code> (Sync/DB/MQ), <code>Importance</code> (High/Medium/Low)</Typography>
+                  </Box>
+                </Box>
+                
+                <Typography variant="subtitle2" className="text-slate-700 font-bold mt-2">
+                  Systems Metadata (Nodes CSV)
+                </Typography>
+                <TextField
+                  multiline
+                  rows={4}
+                  fullWidth
+                  variant="outlined"
+                  value={nodesCSV}
+                  onChange={(e) => setNodesCSV(e.target.value)}
+                  placeholder="System ID,System Name,Category,Priority,Monthly Revenue ($),Complexity,Migration Cost ($),Migration Time (Days)"
+                  inputProps={{ style: { fontFamily: 'monospace', fontSize: '12px' } }}
+                />
+
+                <Typography variant="subtitle2" className="text-slate-700 font-bold">
+                  Dependencies (Edges CSV)
+                </Typography>
+                <TextField
+                  multiline
+                  rows={3}
+                  fullWidth
+                  variant="outlined"
+                  value={edgesCSV}
+                  onChange={(e) => setEdgesCSV(e.target.value)}
+                  placeholder="From System,To System,Connection Type,Importance"
+                  inputProps={{ style: { fontFamily: 'monospace', fontSize: '12px' } }}
+                />
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={() => setUploadDialogOpen(false)} color="inherit">
+                  Cancel
+                </Button>
+                <Button onClick={handleUploadCSV} color="primary" variant="contained">
+                  Submit & Build Graph
+                </Button>
+              </DialogActions>
+            </Dialog>
+
+            {/* Ingestion Report Dialog */}
+            <Dialog
+              open={reportDialogOpen}
+              onClose={() => {
+                setReportDialogOpen(false);
+                loadGraph();
+              }}
+              maxWidth="sm"
+              fullWidth
+              PaperProps={{ className: 'glass-panel p-3' }}
+            >
+              <DialogTitle className="font-extrabold text-sky-600">
+                Ingestion Results & Validation Report
+              </DialogTitle>
+              <DialogContent className="flex flex-col gap-4">
+                {uploadReport && (
+                  <React.Fragment>
+                    {uploadReport.status === 'success' && (
+                      <Alert severity="success" className="bg-emerald-100 border border-emerald-300 text-emerald-800">
+                        Metadata processed successfully.
+                      </Alert>
+                    )}
+                    {uploadReport.status === 'partial_success' && (
+                      <Alert severity="warning" className="bg-amber-100 border border-amber-300 text-amber-800">
+                        Completed with warnings / partial success.
+                      </Alert>
+                    )}
+                    {uploadReport.status === 'failed' && (
+                      <Alert severity="error" className="bg-red-100 border border-red-300 text-red-800">
+                        Metadata ingestion failed. No nodes were imported.
+                      </Alert>
+                    )}
+
+                    <Box className="grid grid-cols-3 gap-2 text-center mt-2">
+                      <Paper className="p-3 bg-slate-50 border border-slate-200">
+                        <Typography variant="h6" className="font-bold text-slate-800">{uploadReport.parsed_nodes_count}</Typography>
+                        <Typography variant="caption" className="text-slate-600 block">Systems Parsed</Typography>
+                      </Paper>
+                      <Paper className="p-3 bg-slate-50 border border-slate-200">
+                        <Typography variant="h6" className="font-bold text-slate-800">{uploadReport.parsed_edges_count}</Typography>
+                        <Typography variant="caption" className="text-slate-600 block">Dependencies Parsed</Typography>
+                      </Paper>
+                      <Paper className="p-3 bg-slate-50 border border-slate-200">
+                        <Typography variant="h6" className="font-bold text-slate-800">{uploadReport.skipped_count}</Typography>
+                        <Typography variant="caption" className="text-slate-600 block">Rows Skipped</Typography>
+                      </Paper>
+                    </Box>
+
+                    {uploadReport.errors && uploadReport.errors.length > 0 && (
+                      <Box className="mt-2">
+                        <Typography variant="subtitle2" className="text-red-700 font-bold mb-1">
+                          Critical Ingestion Errors ({uploadReport.errors.length}):
+                        </Typography>
+                        <Paper className="p-2 bg-red-50/50 border border-red-200 max-h-40 overflow-y-auto">
+                          {uploadReport.errors.map((err, i) => (
+                            <Typography key={i} variant="caption" className="text-red-800 block font-mono border-b border-red-100/50 pb-1 mb-1">
+                              • {err}
+                            </Typography>
+                          ))}
+                        </Paper>
+                      </Box>
+                    )}
+
+                    {uploadReport.warnings && uploadReport.warnings.length > 0 && (
+                      <Box className="mt-2">
+                        <Typography variant="subtitle2" className="text-amber-700 font-bold mb-1">
+                          Ingestion Warnings & Rule Violations ({uploadReport.warnings.length}):
+                        </Typography>
+                        <Paper className="p-2 bg-amber-50/50 border border-amber-200 max-h-48 overflow-y-auto">
+                          {uploadReport.warnings.map((warn, i) => (
+                            <Typography key={i} variant="caption" className="text-amber-800 block font-mono border-b border-amber-100/50 pb-1 mb-1">
+                              • {warn}
+                            </Typography>
+                          ))}
+                        </Paper>
+                      </Box>
+                    )}
+                  </React.Fragment>
+                )}
+              </DialogContent>
+              <DialogActions>
+                <Button 
+                  onClick={() => {
+                    setReportDialogOpen(false);
+                    loadGraph();
+                  }} 
+                  color="primary" 
+                  variant="contained"
+                >
+                  Close & View Twin
+                </Button>
+              </DialogActions>
+            </Dialog>
+            {/* Floating Copilot FAB */}
+            <Fab
+              color="primary"
+              variant="extended"
+              onClick={() => setChatOpen(true)}
+              className="fixed bottom-6 right-6 shadow-2xl z-50 bg-sky-600 hover:bg-sky-500 font-bold"
+            >
+              <span className="material-icons mr-2">psychology</span>
+              Ask Migration Copilot
+            </Fab>
+
+            {/* Slide-out AI Copilot Chat Drawer */}
+            <Drawer
+              anchor="right"
+              open={chatOpen}
+              onClose={() => setChatOpen(false)}
+              PaperProps={{ style: { width: '420px', backgroundColor: '#0f172a', color: '#f8fafc' } }}
+            >
+              <Box className="p-4 flex flex-col h-full">
+                <Box className="flex justify-between items-center pb-3 border-b border-slate-800">
+                  <Box className="flex items-center gap-2">
+                    <span className="material-icons text-sky-400">smart_toy</span>
+                    <Typography variant="h6" className="font-bold text-sky-400">Migration Copilot</Typography>
+                  </Box>
+                  <Button onClick={() => setChatOpen(false)} color="inherit" size="small">
+                    <span className="material-icons">close</span>
+                  </Button>
+                </Box>
+
+                {/* Messages area */}
+                <Box className="flex-1 overflow-y-auto my-4 flex flex-col gap-3 pr-1">
+                  {chatMessages.map((msg, i) => (
+                    <Box 
+                      key={i} 
+                      className={`p-3 rounded-lg max-w-[85%] text-xs font-mono leading-relaxed ${
+                        msg.role === 'user' 
+                          ? 'self-end bg-sky-600 text-white rounded-br-none' 
+                          : 'self-start bg-slate-800 text-slate-200 border border-slate-700 rounded-bl-none'
+                      }`}
+                    >
+                      <Typography variant="caption" className="font-bold block mb-1 opacity-70">
+                        {msg.role === 'user' ? 'You' : 'Copilot AI'}
+                      </Typography>
+                      {msg.content}
+                    </Box>
+                  ))}
+                  {chatLoading && (
+                    <Box className="self-start p-3 bg-slate-800 border border-slate-700 rounded-lg text-xs text-sky-400 flex items-center gap-2">
+                      <CircularProgress size={14} color="inherit" /> Thinking & inspecting Digital Twin...
+                    </Box>
+                  )}
+                </Box>
+
+                {/* Chat Input */}
+                <Box className="flex gap-2 pt-2 border-t border-slate-800">
+                  <TextField
+                    fullWidth
+                    size="small"
+                    variant="outlined"
+                    placeholder="Ask a question or debate migration trade-offs..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendChat()}
+                    inputProps={{ style: { color: 'white', fontSize: '12px' } }}
+                  />
+                  <Button 
+                    variant="contained" 
+                    color="primary" 
+                    disabled={chatLoading || !chatInput.trim()}
+                    onClick={handleSendChat}
+                  >
+                    <span className="material-icons">send</span>
+                  </Button>
+                </Box>
+              </Box>
+            </Drawer>
+
+            {/* Footer */}
+
+            <Box className="py-4 text-center text-xs text-slate-600 border-t border-slate-200">
+              EMIOS Enterprise Migration Intelligence System © 2026 - Modernizing Enterprise safely and profitably.
+            </Box>
+          </Box>
+        </ThemeProvider>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>

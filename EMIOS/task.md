@@ -1,0 +1,42 @@
+# Task Checklist - EMIOS Implementation
+
+- [x] **Phase 1: Project & Workspace Setup**
+  - [x] Create workspace structure (`backend/` and `frontend/` subdirectories)
+  - [x] Define the Docker Compose orchestrator (`docker-compose.yml`)
+  - [x] Write Python dependencies (`backend/requirements.txt`) and env templates
+- [x] **Phase 2: Backend Core Services**
+  - [x] Implement database clients & environment settings (`config.py`, `db.py`)
+  - [x] Model system schemas and API payloads (`schemas.py`)
+  - [x] Write Neo4j service for graph management (`neo4j_service.py`)
+  - [x] Write Simulation Engine for cascading failures & Monte Carlo simulations (`simulation_engine.py`)
+- [x] **Phase 3: Multi-Agent Engine (LangGraph)**
+  - [x] Build agent state model (`state.py`)
+  - [x] Develop agent workflow nodes: Discovery, Dependency, Risk, and Planner agents (`workflow.py`)
+  - [x] Implement negotiation iterations and state transitions
+- [x] **Phase 4: API & Server**
+  - [x] Set up main FastAPI server and routing (`main.py`, `endpoints.py`)
+  - [x] Implement mock/stub generator for offline/local testing
+- [x] **Phase 5: Frontend Development**
+  - [x] Bootstrap React app using Vite
+  - [x] Install MUI, React Flow, Recharts, and icon libraries
+  - [x] Implement custom glassmorphic dark theme (`theme.js`)
+  - [x] Build dashboard components:
+    - [x] App header, sidebar navigation, and main layout
+    - [x] `MetadataUpload.jsx` (CSV parser & demo data)
+    - [x] `GraphViewer.jsx` (React Flow visualization with cascading risk lines)
+    - [x] `SimulationPanel.jsx` & `BusinessImpactDashboard.jsx` (What-If analysis controls and charts)
+    - [x] `AgentNegotiationLogs.jsx` (Live negotiation chat logger)
+    - [x] `MigrationRoadmap.jsx` (Wave boards with rationales)
+- [x] **Phase 6: Verification & Testing**
+  - [x] Spin up Docker Compose and check Neo4j connectivity
+  - [x] Verify API endpoints
+  - [x] Run E2E workflow walkthrough
+- [x] **Phase 7: Enterprise Refactoring (Stages 1-5)**
+  - [x] Perform codebase analysis, architectural review, and dependency mapping
+  - [x] Centralize calculation factors, multipliers, and thresholds in a constants registry
+  - [x] Configure dynamic properties (max runs, temperatures) in config schema settings
+  - [x] Set up structured python logging and API latency telemetry middleware
+  - [x] Define custom platform exception subclasses and register unified JSON handlers
+  - [x] Add readiness/liveness `/health` checks validating active Neo4j connectivity
+  - [x] Author multi-stage, containerized production build configurations (Dockerfile)
+  - [x] Implement pytest automation suite testing algorithm math and REST routes E2E
