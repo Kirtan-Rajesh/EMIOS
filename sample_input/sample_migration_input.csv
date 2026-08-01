@@ -1,0 +1,7 @@
+System ID,System Name,Category,Priority,Complexity,Tech Stack,Annual Hosting Cost ($),Source System,Target System,Connection Type,Importance
+identity-platform,Identity Platform,Microservice,Critical,Medium,Java 17 / Spring Boot,185000,Order Management Service,Identity Platform,Sync,High
+order-management,Order Management Service,Monolith,Critical,High,.NET Framework 4.8 / IIS,420000,Order Management Service,Customer Data Platform,Sync,High
+customer-data,Customer Data Platform,Database,High,High,Microsoft SQL Server 2019,240000,Order Management Service,Inventory Service,Sync,High
+inventory-service,Inventory Service,Microservice,High,Medium,Node.js 20 / Express,150000,Inventory Service,Event Streaming Platform,Async,Medium
+event-streaming,Event Streaming Platform,Integration,High,Medium,Apache Kafka 3.6,120000,Event Streaming Platform,Analytics Warehouse,Async,Medium
+analytics-warehouse,Analytics Warehouse,Data Warehouse,Medium,High,Snowflake,275000,Customer Data Platform,Analytics Warehouse,Batch,Medium

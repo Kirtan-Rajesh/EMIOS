@@ -1,0 +1,21 @@
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.env
+backend/.env
+backend/.env.production
+*.log
+.DS_Store
+*.db
+storage_fallback/
+.claude/
+
+# Deploy scripts: local-only state, generated secrets, downloaded SSH key
+scripts/deploy/.deploy_state.json
+scripts/deploy/.aws_credentials
+scripts/deploy/.env.production.generated
+scripts/deploy/emios-lightsail-key.pem
+scripts/deploy/emios-prod-ec2-key.pem
+scripts/deploy/emios-deploy.tar.gz

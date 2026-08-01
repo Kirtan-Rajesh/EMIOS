@@ -1,0 +1,15 @@
+id,name,type,business_value,revenue_impact,migration_complexity,base_cost,base_duration,runtime,annual_cost
+front-end,Front-End Web Service,Microservice,High,45000,Medium,20000,12,Node.js,30000
+carts,Carts Service,Microservice,High,35000,Medium,18000,10,Java / Spring Boot,22000
+carts-db,Carts Database,Database,High,25000,Low,8000,5,MongoDB,16000
+catalogue,Catalogue Service,Microservice,Medium,20000,Low,12000,7,Go,14000
+catalogue-db,Catalogue Database,Database,Medium,15000,Low,7000,4,MySQL,10000
+orders,Orders Service,Microservice,High,55000,Medium,22000,12,Java / Spring Boot,24000
+orders-db,Orders Database,Database,High,30000,Medium,9000,5,MongoDB,18000
+payment,Payment Service,Microservice,High,60000,Medium,20000,12,Go,18000
+queue-master,Queue Master Service,Microservice,Medium,12000,Medium,10000,6,Java / Spring Boot,12000
+rabbitmq,Message Broker,Queue,Medium,10000,Medium,12000,6,RabbitMQ,15000
+session-db,Session Store,Database,Medium,8000,Low,5000,3,Redis,9000
+shipping,Shipping Service,Microservice,Medium,18000,Low,11000,6,Java / Spring Boot,13000
+user,User Service,Microservice,High,30000,Medium,15000,8,Go,17000
+user-db,User Database,Database,High,22000,Low,8000,5,MongoDB,14000

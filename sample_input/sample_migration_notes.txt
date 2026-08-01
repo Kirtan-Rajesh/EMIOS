@@ -1,0 +1,12 @@
+Sample migration assessment input
+================================
+
+System: Order Processing Service
+Owner: Finance Operations
+Current state: Legacy monolith hosted on-premises.
+Target state: Containerized microservice on AWS.
+Notes:
+- The application processes customer orders and payment confirmations.
+- It depends on the inventory service and customer profile database.
+- Security review identified weak password rotation and missing MFA.
+- Recommended next step: inventory the APIs and data flows before migration.

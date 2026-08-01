@@ -1,0 +1,17 @@
+source,target,type,criticality,is_discovered
+front-end,catalogue,Sync,High,false
+front-end,carts,Sync,High,false
+front-end,orders,Sync,High,false
+front-end,user,Sync,High,false
+front-end,session-db,DB,Medium,false
+carts,carts-db,DB,High,false
+catalogue,catalogue-db,DB,Medium,false
+orders,orders-db,DB,High,false
+orders,payment,Sync,High,false
+orders,shipping,Sync,Medium,false
+orders,carts,Sync,Medium,false
+orders,user,Sync,Medium,false
+user,user-db,DB,High,false
+shipping,rabbitmq,MQ,Medium,false
+queue-master,rabbitmq,MQ,Medium,false
+queue-master,orders,Sync,Medium,false

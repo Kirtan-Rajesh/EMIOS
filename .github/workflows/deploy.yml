@@ -1,0 +1,81 @@
+name: Deploy to EC2
+
+# Redeploys the backend/frontend to the EC2 instance on Kirtan's personal AWS
+# account (985124897637) whenever develop changes. This is a Linux-native
+# re-implementation of scripts/deploy/deploy.sh's ship+build steps - deploy.sh
+# itself can't run here as-is (it shells out to cygpath and a Windows
+# venv/Scripts/python.exe, both Git-Bash/Windows-only). Provisioning
+# (scripts/deploy/provision_ec2.py) is NOT part of this workflow - it only
+# redeploys code to an instance that already exists. If the instance is ever
+# torn down and re-provisioned, update the EC2_HOST secret with the new IP.
+#
+# Required repo secrets (Settings -> Secrets and variables -> Actions):
+#   EC2_HOST            public IP of the running instance
+#   EC2_SSH_PRIVATE_KEY contents of scripts/deploy/emios-prod-ec2-key.pem
+#   ENV_PRODUCTION       full contents of scripts/deploy/.env.production.generated
+#                         (real DB/JWT secrets + AWS key - keep this a secret,
+#                         never a repo file)
+
+on:
+  push:
+    branches: [develop]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "${{ secrets.EC2_SSH_PRIVATE_KEY }}" > ~/.ssh/deploy_key.pem
+          chmod 600 ~/.ssh/deploy_key.pem
+          # No ssh-keyscan here on purpose: StrictHostKeyChecking=accept-new below
+          # already auto-accepts the host key on first connect. ssh-keyscan was a
+          # redundant extra network call that fails the whole step (bash -e) on any
+          # transient hiccup, with no benefit over accept-new.
+
+      - name: Write backend/.env.production
+        run: printf '%s\n' "${{ secrets.ENV_PRODUCTION }}" > backend/.env.production
+
+      - name: Package repo
+        run: |
+          tar -czf /tmp/emios-deploy.tar.gz \
+            --exclude='.git' \
+            --exclude='venv' \
+            --exclude='.claude' \
+            --exclude='.pytest_cache' \
+            --exclude='storage_fallback' \
+            --exclude='frontend/node_modules' \
+            --exclude='frontend/dist' \
+            --exclude='__pycache__' \
+            --exclude='scripts/deploy/*.pem' \
+            --exclude='scripts/deploy/.aws_credentials' \
+            --exclude='scripts/deploy/.deploy_state.json' \
+            --exclude='scripts/deploy/.env.production.generated' \
+            .
+
+      - name: Ship code and rebuild stack
+        run: |
+          SSH="ssh -o StrictHostKeyChecking=accept-new -i $HOME/.ssh/deploy_key.pem ubuntu@${{ secrets.EC2_HOST }}"
+          SCP="scp -o StrictHostKeyChecking=accept-new -i $HOME/.ssh/deploy_key.pem"
+
+          $SSH 'mkdir -p ~/emios'
+          $SCP /tmp/emios-deploy.tar.gz ubuntu@${{ secrets.EC2_HOST }}:~/emios/emios-deploy.tar.gz
+          $SSH 'cd ~/emios && tar -xzf emios-deploy.tar.gz && rm emios-deploy.tar.gz'
+          $SCP backend/.env.production ubuntu@${{ secrets.EC2_HOST }}:~/emios/backend/.env.production
+          $SSH 'cd ~/emios && sudo DOCKER_HOST=unix:///run/podman/podman.sock docker-compose -f docker-compose.prod.yml --env-file backend/.env.production up -d --build --force-recreate'
+
+      - name: Health check
+        run: |
+          for i in $(seq 1 18); do
+            if curl -sf "http://${{ secrets.EC2_HOST }}:8000/api/health"; then
+              echo
+              echo "Backend is up: http://${{ secrets.EC2_HOST }}:8000"
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Health check did not pass after 3 minutes - check container logs on the instance."
+          exit 1

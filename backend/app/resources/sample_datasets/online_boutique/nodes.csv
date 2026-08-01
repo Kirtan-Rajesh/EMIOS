@@ -1,0 +1,12 @@
+id,name,type,business_value,revenue_impact,migration_complexity,base_cost,base_duration,runtime,annual_cost
+frontend,Frontend Web Service,Microservice,High,60000,Medium,25000,15,Go 1.21,45000
+cartservice,Cart Service,Microservice,High,40000,Medium,22000,12,C# / .NET 8,30000
+productcatalogservice,Product Catalog Service,Microservice,High,50000,Medium,20000,12,Go 1.21,28000
+currencyservice,Currency Conversion Service,Microservice,Medium,15000,Low,9000,6,Node.js 20,12000
+paymentservice,Payment Service,Microservice,High,70000,Medium,24000,14,Node.js 20,20000
+shippingservice,Shipping Service,Microservice,Medium,20000,Low,12000,8,Go 1.21,15000
+emailservice,Email Notification Service,Microservice,Low,5000,Low,7000,5,Python 3.11,8000
+checkoutservice,Checkout Orchestration Service,Microservice,High,80000,High,35000,20,Go 1.21,25000
+recommendationservice,Recommendation Service,Microservice,Medium,18000,Low,11000,7,Python 3.11,16000
+adservice,Ad Service,Microservice,Low,6000,Low,8000,5,Java 17,10000
+redis-cart,Cart Cache Store,Database,High,30000,Low,6000,4,Redis 7,18000

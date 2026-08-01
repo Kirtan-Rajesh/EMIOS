@@ -1,0 +1,16 @@
+source,target,type,criticality,is_discovered
+frontend,productcatalogservice,Sync,High,false
+frontend,currencyservice,Sync,Medium,false
+frontend,cartservice,Sync,High,false
+frontend,recommendationservice,Sync,Medium,false
+frontend,shippingservice,Sync,Medium,false
+frontend,checkoutservice,Sync,High,false
+frontend,adservice,Sync,Low,false
+cartservice,redis-cart,DB,High,false
+checkoutservice,productcatalogservice,Sync,High,false
+checkoutservice,shippingservice,Sync,Medium,false
+checkoutservice,paymentservice,Sync,High,false
+checkoutservice,emailservice,Sync,Low,false
+checkoutservice,currencyservice,Sync,Medium,false
+checkoutservice,cartservice,Sync,High,false
+recommendationservice,productcatalogservice,Sync,Medium,false

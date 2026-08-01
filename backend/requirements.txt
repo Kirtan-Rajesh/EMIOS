@@ -1,0 +1,46 @@
+fastapi==0.111.0
+uvicorn==0.30.1
+pydantic-settings==2.3.4
+python-dotenv==1.0.1
+networkx==3.3
+langgraph==0.1.4
+python-multipart==0.0.9
+pytest==8.2.2
+neo4j==6.2.0
+qdrant-client==1.18.0
+numpy>=2.1.0
+langchain-core>=0.2.0,<0.3.0
+langchain-openai>=0.1.0,<0.2.0
+langchain-google-genai>=1.0.0,<2.0.0
+langfuse>=2.30.0,<3.0.0
+
+# Relational persistence layer (/api/v1) - SQLAlchemy 2.0 async ORM.
+sqlalchemy>=2.0.30
+asyncpg>=0.29.0        # PostgreSQL async driver (production/default DATABASE_URL)
+aiosqlite>=0.20.0       # SQLite async driver (test-suite in-memory engine)
+greenlet>=3.0.0         # required by SQLAlchemy's async engine under the hood
+httpx>=0.27.0           # FastAPI TestClient / httpx.AsyncClient for async endpoint tests
+pytest-asyncio>=0.23.0  # enables `async def test_...` + async fixtures (see pytest.ini)
+alembic>=1.13.0         # versioned schema migrations against DATABASE_URL - see alembic/README.md
+
+# Auth (/api/v1/auth) - password hashing + JWT.
+bcrypt>=4.1.0           # direct bcrypt.hashpw/checkpw, not passlib (see app/core/security.py)
+PyJWT>=2.8.0
+
+# RAG / document ingestion (/api/v1/assessments/{id}/uploads) - S3 storage, Bedrock LLM +
+# embeddings via raw boto3 (not langchain-aws, to avoid fighting the langchain-core<0.3.0 pin
+# above), plus unstructured-document text extraction.
+boto3>=1.34.0
+pypdf>=4.0.0            # PDF text extraction
+python-docx>=1.1.0      # DOCX text extraction
+python-pptx>=1.0.0      # PPTX text extraction (HLDs are frequently slide decks)
+
+# Document Discovery (/api/v1/assessments/{id}/discover) - structured extraction
+# of nodes/edges from DB schemas, stored procedures, ETL mappings, and API specs.
+sqlglot>=25.0.0         # dialect-agnostic SQL parsing (DDL + stored proc bodies), no DB connection needed
+PyYAML>=6.0             # OpenAPI/Swagger specs authored as YAML
+openpyxl>=3.1.0         # XLSX text extraction (RAG) + tabular row reading (Metadata/ETL-mapping extractors)
+
+# Report PDF export (/api/v1/assessments/{id}/report/pdf) - pure-Python PDF generation,
+# no native/system libraries required (unlike WeasyPrint's Pango/Cairo dependency).
+reportlab>=4.0.0

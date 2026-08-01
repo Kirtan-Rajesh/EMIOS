@@ -1,0 +1,91 @@
+id,name,type,business_value,revenue_impact,migration_complexity,base_cost,base_duration,runtime,annual_cost
+core_ledger_mainframe,Core Ledger Mainframe,Mainframe,High,284616.58,High,161254.84,95,COBOL / z/OS,446935.11
+core_banking_db,Core Banking DB2 Database,Database,High,124652.14,High,196122.83,154,IBM DB2 z/OS,135983.34
+general_ledger_db,General Ledger Database,Database,High,107820.43,High,339864.82,63,Oracle 19c,32180.38
+account_mgmt_service,Account Management Service,Microservice,High,154451.49,Medium,102242.25,55,Java 11,25907.01
+deposit_service,Deposit Processing Service,Microservice,High,287963.02,Medium,95392.98,34,Java 11,45936.72
+loan_origination_service,Loan Origination Service,Microservice,High,169021.03,Medium,134316.04,30,Java 17,65851.15
+loan_servicing_service,Loan Servicing Service,Microservice,High,188880.17,Medium,48657.54,41,Java 17,18176.82
+interest_calc_engine,Interest Calculation Engine,Microservice,High,201576.74,High,311540.72,104,COBOL/Java Bridge,58298.08
+core_banking_api_gateway,Core Banking API Gateway,Microservice,High,338281.05,Medium,117567.81,54,Kong Gateway,19986.09
+swift_gateway,SWIFT Network Gateway,ThirdPartyGateway,High,375134.52,Low,6970.0,12,SWIFT Alliance Access,51470.23
+ach_processor,ACH Payment Processor,Microservice,High,277926.32,Medium,133404.83,56,Java 11,25383.09
+wire_transfer_service,Wire Transfer Service,Microservice,High,102257.65,Medium,109351.6,38,Java 11,88817.72
+core_fraud_detection,Core Banking Fraud Detection,Microservice,High,353701.67,Medium,133978.04,44,Python 3.11,32237.89
+regulatory_reporting_service,Regulatory Reporting Service,Microservice,High,283419.02,Medium,73779.86,43,Java 11,38421.66
+core_event_bus,Core Banking Event Bus,Queue,High,294456.06,Medium,114218.44,24,Apache Kafka,54593.52
+teller_system,Branch Teller System,Monolith,High,134764.37,High,478107.06,80,PowerBuilder/C++,238678.06
+branch_middleware,Branch Middleware,Microservice,Medium,32546.61,Medium,141046.94,55,Java 8,27569.21
+core_banking_cache,Core Banking Session Cache,Database,Medium,36078.38,Low,24207.84,4,Redis 7,49776.25
+batch_settlement_job,Nightly Batch Settlement,Monolith,High,90272.08,High,291953.87,94,COBOL/JCL,119856.58
+archive_service,Core Banking Archive Service,Microservice,Low,13783.91,Medium,98061.61,40,Java 8,27010.12
+card_issuing_service,Card Issuing Service,Microservice,High,239754.0,Medium,136161.98,49,Java 17,21429.73
+card_processing_engine,Card Processing Engine,Microservice,High,124681.7,High,485245.04,128,C++17,31019.33
+payment_gateway_stripe,Stripe Payment Gateway,ThirdPartyGateway,High,267067.52,Low,27445.57,15,SaaS API,28099.82
+payment_gateway_visanet,VisaNet Gateway,ThirdPartyGateway,High,399144.25,Low,8458.29,18,ISO 8583 API,14545.47
+tokenization_service,Card Tokenization Service,Microservice,High,95077.24,Medium,43157.9,60,Go 1.21,22798.56
+payments_db,Payments Transaction Database,Database,High,297753.99,Medium,101569.08,44,PostgreSQL 15,69610.51
+payments_ledger_db,Payments Ledger Database,Database,High,398758.84,High,388101.46,130,Oracle 19c,131901.36
+payments_fraud_ml_service,Payments Fraud ML Service,Microservice,High,83673.93,Medium,116486.62,54,Python 3.11,70070.22
+dispute_management_service,Dispute Management Service,Microservice,Medium,64958.92,Medium,70821.06,38,Java 17,44781.22
+merchant_onboarding_service,Merchant Onboarding Service,Microservice,Medium,44492.04,Low,28845.4,11,Node.js 20,87751.05
+pos_integration_service,POS Integration Service,Microservice,Medium,64527.54,Medium,90921.8,26,Go 1.21,79641.49
+payments_event_bus,Payments Event Bus,Queue,High,175502.33,Medium,106673.94,58,Apache Kafka,27929.22
+settlement_batch_service,Payments Settlement Batch,Microservice,High,199652.43,Medium,49385.88,53,Java 11,83479.48
+payments_cache,Payments Session Cache,Database,Medium,53931.4,Low,17215.14,6,Redis 7,140782.82
+recurring_billing_service,Recurring Billing Service,Microservice,Medium,72116.92,Low,25791.64,12,Node.js 20,29156.18
+payments_notification_service,Payments Notification Service,Microservice,Low,4372.2,Low,19183.92,5,Node.js 20,16852.28
+chargeback_service,Chargeback Processing Service,Microservice,Medium,46589.38,Medium,38305.5,54,Java 17,71266.75
+risk_scoring_service,Transaction Risk Scoring Service,Microservice,High,121085.27,Medium,87033.89,55,Python 3.11,23210.16
+payments_api_gateway,Payments API Gateway,Microservice,High,248855.61,Medium,102791.27,33,Kong Gateway,84313.08
+payments_reporting_service,Payments Reporting Service,Microservice,Medium,64092.24,Low,22246.69,12,Java 11,41919.38
+mobile_banking_app,Mobile Banking Backend-for-Frontend,Microservice,High,294939.83,Medium,74810.46,53,Node.js 20,46118.89
+web_banking_portal,Web Banking Portal Backend,Microservice,High,159329.8,Medium,37683.11,21,Java 17,57064.7
+digital_onboarding_service,Digital Account Onboarding Service,Microservice,High,153636.71,Medium,56426.09,24,Node.js 20,66627.28
+notification_service,Customer Notification Service,Microservice,Medium,18826.79,Low,6685.01,4,Go 1.21,78770.83
+customer_profile_service,Customer Profile Service,Microservice,High,102674.35,Medium,58560.56,51,Java 17,27138.94
+customer_db,Customer Master Database,Database,High,122339.79,Medium,142261.71,56,PostgreSQL 15,94907.51
+session_service,Digital Session Service,Database,Medium,30794.82,Low,16824.32,16,Redis 7,44753.29
+chatbot_service,Customer Chatbot Service,Microservice,Low,2357.03,Low,15776.28,16,Python 3.11,42888.18
+biometric_auth_service,Biometric Authentication Service,Microservice,High,356427.76,Medium,36500.54,26,Go 1.21,14849.01
+digital_identity_service,Digital Identity & SSO Service,Microservice,High,313028.35,High,510266.63,73,Java 17,29892.51
+atm_network_gateway,ATM Network Gateway,ThirdPartyGateway,High,140866.85,Low,16215.34,16,NDC+ Protocol,19174.4
+card_control_service,Card Controls Service,Microservice,Medium,45070.82,Low,26862.15,5,Go 1.21,45450.46
+budgeting_tools_service,Budgeting Tools Service,Microservice,Low,13058.89,Low,18758.13,4,Node.js 20,62171.59
+statements_service,eStatements Service,Microservice,Medium,50138.22,Low,5368.95,5,Java 11,84109.36
+statements_db,Statements Archive Database,Database,Medium,70165.22,Low,9157.78,18,MongoDB 7,82576.59
+digital_analytics_service,Digital Analytics Service,Microservice,Low,13105.11,Low,27561.07,8,Python 3.11,40317.85
+marketing_automation,Marketing Automation Platform,ThirdPartyGateway,Low,14794.32,Low,11630.08,17,SaaS (Salesforce Marketing Cloud),24262.46
+customer_support_ticketing,Customer Support Ticketing,ThirdPartyGateway,Medium,60278.45,Low,23262.63,20,SaaS (Zendesk),43093.57
+digital_event_bus,Digital Banking Event Bus,Queue,Medium,46633.64,Medium,52787.74,33,Apache Kafka,77966.11
+feature_flag_service,Feature Flag Service,Microservice,Low,9108.52,Low,18554.88,13,Go 1.21,14573.22
+hris_core,Core HRIS Platform,Monolith,Medium,52971.54,High,376282.67,169,PeopleSoft/PL-SQL,259337.84
+hr_db,HR Master Database,Database,Medium,18697.17,High,378522.82,168,Oracle 19c,44157.24
+payroll_service,Payroll Processing Service,Microservice,High,270411.23,Medium,111025.51,35,Java 11,42302.04
+payroll_db,Payroll Database,Database,High,381310.76,Medium,98361.05,57,PostgreSQL 15,97287.49
+benefits_admin_service,Benefits Administration Service,Microservice,Medium,55259.8,Medium,80306.99,57,Java 11,55218.15
+identity_sso_service,Enterprise Identity & SSO,Microservice,High,181238.35,High,267344.56,145,Java 17,67295.34
+active_directory,Active Directory,Database,High,156379.5,Medium,77494.3,39,Microsoft AD,79439.19
+email_exchange_service,Enterprise Email Service,ThirdPartyGateway,Medium,75386.19,Low,28393.36,3,SaaS (Microsoft 365),32914.28
+hr_analytics_service,HR Analytics Service,Microservice,Low,14978.36,Low,29902.41,5,Python 3.11,53010.75
+recruiting_ats_service,Recruiting/ATS Platform,ThirdPartyGateway,Low,8082.39,Low,8311.41,14,SaaS (Workday),54043.21
+timesheet_service,Employee Timesheet Service,Microservice,Medium,72152.57,Low,14238.18,8,Node.js 20,45054.77
+expense_management_service,Expense Management,ThirdPartyGateway,Medium,50309.17,Low,12562.93,19,SaaS (Concur),10391.16
+enterprise_service_bus,Enterprise Service Bus,Queue,Medium,68111.77,High,284720.44,144,IBM MQ,21733.12
+shared_file_storage,Shared Enterprise File Storage,Database,Low,13293.78,Medium,61735.91,26,NetApp/SMB,116514.17
+enterprise_search_service,Enterprise Search Service,Microservice,Low,3176.27,Low,12043.91,9,Elasticsearch 8,67408.97
+procurement_service,Procurement Service,Microservice,Medium,28233.83,Medium,106108.56,36,Java 11,50432.72
+procurement_db,Procurement Database,Database,Medium,31322.88,Medium,138979.09,23,PostgreSQL 15,31998.8
+vendor_management_service,Vendor Management Service,Microservice,Medium,42532.43,Low,11917.01,3,Java 11,36684.52
+inventory_service,Branch Equipment Inventory Service,Microservice,Low,2831.48,Low,29494.95,8,Node.js 20,69298.47
+inventory_db,Inventory Database,Database,Low,8723.53,Low,15692.17,3,MySQL 8,34543.6
+purchase_order_service,Purchase Order Service,Microservice,Medium,76428.31,Medium,112922.35,29,Java 11,53647.22
+invoice_processing_service,Invoice Processing Service,Microservice,Medium,69248.68,Medium,99901.15,29,Java 11,44382.94
+erp_monolith,Enterprise ERP Monolith,Monolith,High,93385.23,High,314093.18,179,SAP ECC / ABAP,338836.69
+erp_db,ERP Database,Database,High,355424.83,High,554516.09,86,SAP HANA,108668.67
+contract_management_service,Contract Management Service,Microservice,Low,10337.07,Low,13841.97,20,Node.js 20,80730.78
+supplier_portal,Supplier Self-Service Portal,ThirdPartyGateway,Low,6689.28,Low,20516.54,7,SaaS (Ariba),56288.19
+logistics_tracking_service,Logistics Tracking Service,Microservice,Low,4314.32,Low,9062.54,8,Go 1.21,80513.3
+warehouse_mgmt_service,Warehouse Management Service,Microservice,Low,1347.01,Medium,118387.74,41,Java 11,72590.92
+procurement_event_bus,Procurement Event Bus,Queue,Low,6763.98,Medium,110388.86,35,RabbitMQ,32342.37
+asset_management_service,Fixed Asset Management Service,Microservice,Medium,66179.34,Medium,42971.48,22,Java 11,78687.46

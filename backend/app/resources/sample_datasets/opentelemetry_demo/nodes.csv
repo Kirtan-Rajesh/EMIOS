@@ -1,0 +1,21 @@
+id,name,type,business_value,revenue_impact,migration_complexity,base_cost,base_duration,runtime,annual_cost
+frontend,Storefront Frontend,Microservice,High,55000,Medium,26000,15,TypeScript / Node.js,40000
+frontend-proxy,Frontend Envoy Proxy,Microservice,Medium,20000,Low,10000,6,Envoy Proxy,14000
+ad,Ad Service,Microservice,Low,6000,Low,8000,5,Java 17,9000
+cart,Cart Service,Microservice,High,40000,Medium,22000,12,C# / .NET 8,28000
+checkout,Checkout Service,Microservice,High,85000,High,36000,20,Go 1.22,26000
+currency,Currency Service,Microservice,Medium,15000,Low,9000,6,C++17,11000
+email,Email Service,Microservice,Low,5000,Low,7000,5,Ruby 3.2,8000
+payment,Payment Service,Microservice,High,72000,Medium,24000,14,JavaScript / Node.js,19000
+product-catalog,Product Catalog Service,Microservice,High,48000,Medium,20000,12,Go 1.22,27000
+quote,Quote Service,Microservice,Medium,14000,Low,9000,6,PHP 8.2,10000
+recommendation,Recommendation Service,Microservice,Medium,18000,Low,11000,7,Python 3.11,15000
+shipping,Shipping Service,Microservice,Medium,20000,Low,12000,8,Rust,14000
+accounting,Accounting Service,Microservice,Medium,22000,Medium,15000,10,C# / .NET 8,16000
+fraud-detection,Fraud Detection Service,Microservice,High,45000,Medium,18000,12,Kotlin / Java,20000
+kafka,Order Events Message Broker,Queue,High,30000,Medium,20000,10,Apache Kafka,32000
+valkey-cart,Cart Cache Store,Database,High,28000,Low,6000,4,Valkey (Redis-compatible),17000
+astronomy-db,Product & Accounting Database,Database,High,38000,Medium,16000,10,PostgreSQL 16,24000
+flagd,Feature Flag Service,Microservice,Medium,10000,Low,7000,5,Go 1.22,9000
+flagd-ui,Feature Flag Admin UI,Microservice,Low,3000,Low,5000,3,Node.js / React,6000
+image-provider,Product Image Provider,Microservice,Low,4000,Low,6000,4,Nginx,7000

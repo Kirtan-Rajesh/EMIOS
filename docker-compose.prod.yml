@@ -1,0 +1,130 @@
+# Production/deployment compose - backend + postgres + neo4j, all on network_mode: host
+# (talking to each other via localhost) rather than a compose-managed bridge network -
+# see the network_mode comment on the postgres service for why. Qdrant is intentionally
+# excluded: nothing in the codebase queries it yet (only initialized defensively in
+# app/core/db.py), and skipping it saves RAM on a small cloud instance. Add it back here
+# if that changes.
+#
+# Usage (from the repo root, i.e. this file's directory):
+#   docker-compose -f docker-compose.prod.yml --env-file backend/.env.production up -d --build
+#   (podman 3.4.4, the Ubuntu 22.04 apt default, has no `compose` subcommand - see
+#   scripts/deploy/README.md for driving docker-compose against podman's socket instead)
+#
+# Requires backend/.env.production to exist first - copy it from
+# backend/.env.production.example and fill in real passwords/keys.
+
+# Explicit project name so this never shares volumes/network with docker-compose.yml
+# (the local-dev compose file) even though both live in the same directory - Postgres
+# only applies POSTGRES_PASSWORD on first init of an empty volume, so accidentally
+# reusing a volume from a different compose run silently keeps the OLD password.
+name: emios-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: emios-postgres
+    restart: unless-stopped
+    # host networking sidesteps podman 3.4.4's CNI custom-bridge-network handling
+    # entirely (its labeled-network support is broken on this podman version - see
+    # deploy notes) - fine for a single-VM deployment with no need for network
+    # isolation between these containers.
+    network_mode: host
+    # host networking means this binds directly on the instance's own network
+    # interfaces, not just inside an isolated compose network - the official
+    # postgres image otherwise listens on 0.0.0.0 (needed for normal bridge-
+    # network container-to-container traffic, but not here), which would put a
+    # database with the documented default password directly on the public
+    # internet unless the instance's firewall/security group happens to also
+    # block 5432. Restricting to loopback here means only other processes on
+    # this same host (i.e. the backend, also on host networking) can reach it,
+    # regardless of instance firewall config - defense in depth, not a
+    # replacement for also firewalling 5432 at the instance level per
+    # scripts/deploy/RUNBOOK.md.
+    command: ["postgres", "-c", "listen_addresses=127.0.0.1"]
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER:-emios}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-emios_secure_password}
+      - POSTGRES_DB=${POSTGRES_DB:-emios}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-emios}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  neo4j:
+    image: neo4j:5.12.0
+    container_name: emios-neo4j
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - NEO4J_AUTH=neo4j/${NEO4J_PASSWORD:-emios_secure_password}
+      # Same reasoning as postgres's listen_addresses override above - host
+      # networking otherwise leaves neo4j's bolt (7687)/http (7474) connectors
+      # on 0.0.0.0, reachable from outside the instance.
+      - NEO4J_server_default__listen__address=127.0.0.1
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+      - NEO4J_apoc_import_file_use__neo4j__config=true
+      # Conservative heap/pagecache sizing so Neo4j doesn't try to claim most of a small
+      # (2-4GB) instance's RAM by default - it shares the box with postgres and backend.
+      - NEO4J_server_memory_heap_initial__size=512m
+      - NEO4J_server_memory_heap_max__size=512m
+      - NEO4J_server_memory_pagecache_size=256m
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      # cypher-shell ships in every official neo4j image, unlike curl/wget which aren't
+      # guaranteed present. Neo4j can take 15-30s+ to accept bolt connections on first
+      # boot - without this healthcheck, backend starts before neo4j is ready, its
+      # one-shot connection attempt (app/core/db.py has no retry) fails, and the graph
+      # silently runs in in-memory fallback mode for the rest of the container's life.
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p ${NEO4J_PASSWORD:-emios_secure_password} 'RETURN 1' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: emios-backend:latest
+    container_name: emios-backend
+    restart: unless-stopped
+    network_mode: host
+    depends_on:
+      postgres:
+        condition: service_healthy
+      neo4j:
+        condition: service_healthy
+    environment:
+      - PORT=8000
+      - NEO4J_URI=bolt://localhost:7687
+      - NEO4J_USER=neo4j
+      - NEO4J_PASSWORD=${NEO4J_PASSWORD:-emios_secure_password}
+      - DATABASE_URL=postgresql+asyncpg://${POSTGRES_USER:-emios}:${POSTGRES_PASSWORD:-emios_secure_password}@localhost:5432/${POSTGRES_DB:-emios}
+      # No default here on purpose - app/core/config.py's dev default is public/
+      # source-controlled, so silently falling back to it in prod would be a real
+      # auth bypass. Must be set in backend/.env.production.
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:?JWT_SECRET_KEY must be set in backend/.env.production}
+      - ENABLE_LANGFUSE_TRACING=${ENABLE_LANGFUSE_TRACING:-false}
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      # AWS Bedrock + S3. Leave AWS_ACCESS_KEY_ID/AWS_SECRET_ACCESS_KEY unset here and
+      # attach an IAM role to the instance instead where possible - the empty defaults
+      # below mean "fall back to boto3's own credential chain" (app.core.config.get_boto3_client).
+      - AWS_REGION=${AWS_REGION:-us-east-1}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-}
+      - BEDROCK_LLM_MODEL_ID=${BEDROCK_LLM_MODEL_ID:-nvidia.nemotron-nano-12b-v2}
+      - BEDROCK_MAX_TOKENS=${BEDROCK_MAX_TOKENS:-512}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME:-emios-documents}
+
+volumes:
+  postgres_data:
+  neo4j_data:
+  neo4j_logs:

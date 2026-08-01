@@ -1,0 +1,283 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/* Class-based dark mode toggle (default Tailwind v4 uses prefers-color-scheme;
+   we want an explicit user-controlled toggle via a `.dark` class on <html>). */
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  /* Inter everywhere for body + display (2026-07-31) - was Segoe UI/Bahnschrift,
+     a Windows-only "mission-control" pairing that fell back inconsistently on
+     non-Windows machines. Loaded via Google Fonts in index.html; reads as a
+     clean, modern dashboard face at both body and heading weights. */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-display: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono-ui: "Cascadia Code", ui-monospace, "SF Mono", "JetBrains Mono", Consolas, monospace;
+
+  /* EMIOS brand - Blackout palette: near-black ground, teal as the primary
+     interactive/low-risk signal, hot pink reserved for the brand mark and
+     single-point-of-failure emphasis, crimson for high risk only. */
+  --color-brand-50: #e8fdfa;
+  --color-brand-100: #c8f9f1;
+  --color-brand-200: #92f0e2;
+  --color-brand-300: #5be9d1;
+  --color-brand-400: #30E3CA;
+  --color-brand-500: #1abfa8;
+  --color-brand-600: #129787;
+  --color-brand-700: #0d746a;
+  --color-brand-800: #0a5750;
+  --color-brand-900: #073e39;
+
+  --color-hot: #FF204E;
+
+  --color-risk-low: #30E3CA;
+  --color-risk-medium: #FFB020;
+  --color-risk-high: #DA0037;
+  --color-risk-critical: #a4023d;
+}
+
+/* Light theme (2026-08-01): adopted from the team's ui-redesign branch's
+   "enterprise light" palette - flat blue primary, no brand-teal/hot-pink -
+   as the default. Dark theme below is the original "Blackout" identity,
+   preserved unchanged and reachable via the toggle in AppShell's account
+   menu (see lib/theme-context.tsx) rather than being replaced by it. */
+:root {
+  --radius: 0.375rem;
+
+  --background: #f8fafc;
+  --foreground: #0f172a;
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --popover: #ffffff;
+  --popover-foreground: #0f172a;
+
+  --primary: #2563eb;
+  --primary-foreground: #ffffff;
+
+  --secondary: #f1f5f9;
+  --secondary-foreground: #0f172a;
+
+  --muted: #f1f5f9;
+  --muted-foreground: #64748b;
+
+  --accent: #eff6ff;
+  --accent-foreground: #1d4ed8;
+
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+
+  --success: #10b981;
+  --warning: #f59e0b;
+
+  --border: #e2e8f0;
+  --input: #e2e8f0;
+  --ring: #2563eb;
+
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0f172a;
+  --sidebar-border: #e2e8f0;
+  --sidebar-accent: #eff6ff;
+  --sidebar-accent-foreground: #1d4ed8;
+
+  --chart-1: #2563eb;
+  --chart-2: #38bdf8;
+  --chart-3: #818cf8;
+  --chart-4: #f472b6;
+  --chart-5: #fb923c;
+}
+
+.dark {
+  --radius: 0.625rem;
+
+  --background: #050506;
+  --foreground: #f6f6f1;
+
+  --card: #0d0e10;
+  --card-foreground: #f6f6f1;
+
+  --popover: #0d0e10;
+  --popover-foreground: #f6f6f1;
+
+  --primary: #30E3CA;
+  --primary-foreground: #04231d;
+
+  --secondary: #15171a;
+  --secondary-foreground: #f6f6f1;
+
+  --muted: #15171a;
+  --muted-foreground: #9c9c95;
+
+  --accent: #14201d;
+  --accent-foreground: #30E3CA;
+
+  --destructive: #DA0037;
+  --destructive-foreground: #ffffff;
+
+  --success: #30E3CA;
+  --warning: #FFB020;
+
+  --border: #212226;
+  --input: #212226;
+  --ring: #30E3CA;
+
+  --sidebar: #0a0a0b;
+  --sidebar-foreground: #f6f6f1;
+  --sidebar-border: #1c1e21;
+  --sidebar-accent: #14201d;
+  --sidebar-accent-foreground: #30E3CA;
+
+  --chart-1: #30E3CA;
+  --chart-2: #FFB020;
+  --chart-3: #DA0037;
+  --chart-4: #FF204E;
+  --chart-5: #6b7280;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) - 2px);
+  --radius-md: calc(var(--radius) - 1px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 2px);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    color-scheme: light;
+    scroll-behavior: smooth;
+    /* Slightly bigger app-wide (2026-07-31) - every Tailwind text-* utility
+       is rem-based off this root size, so one bump here scales the whole
+       app's type (including the many text-xs/text-sm micro-labels)
+       proportionally instead of hunting down each className individually. */
+    font-size: 107%;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: var(--font-sans);
+  }
+}
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 999px;
+  }
+
+  /* Frosted-glass surface used across the graph, hero and homepage cards. */
+  .glass-panel {
+    background: color-mix(in srgb, var(--card) 60%, transparent);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid var(--border);
+  }
+
+  /* Faint fractal-noise overlay - keeps large black surfaces from looking flat. */
+  .bg-noise {
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+  }
+
+  .animate-spin-slow {
+    animation: spin-slow 18s linear infinite;
+  }
+  .animate-flow-dash {
+    animation: flow-dash 0.7s linear infinite;
+  }
+  .animate-marquee {
+    animation: marquee 32s linear infinite;
+  }
+  .animate-marquee:hover {
+    animation-play-state: paused;
+  }
+}
+
+@keyframes spin-slow {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+@keyframes pulse-ring {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-hot) 45%, transparent);
+  }
+  70% {
+    box-shadow: 0 0 0 14px transparent;
+  }
+  100% {
+    box-shadow: 0 0 0 0 transparent;
+  }
+}
+.animate-pulse-ring {
+  animation: pulse-ring 2.4s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-spin-slow,
+  .animate-flow-dash,
+  .animate-marquee,
+  .animate-pulse-ring {
+    animation: none !important;
+  }
+}

@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>EMIOS - Enterprise Migration Intelligence Operating System</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <script>
+      // Applied synchronously, before first paint, so there's no flash of
+      // the wrong theme while React hydrates - see lib/theme-context.tsx,
+      // which owns this same "emios-theme" key from then on. Defaults to
+      // light (the enterprise theme) when nothing is stored yet, i.e. for
+      // every user before they ever touch the toggle; dark is now the
+      // opt-in choice.
+      (function () {
+        var stored = localStorage.getItem("emios-theme");
+        if (stored === "dark") document.documentElement.classList.add("dark");
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
